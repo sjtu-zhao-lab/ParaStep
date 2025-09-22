@@ -1,0 +1,47 @@
+import torch.distributed as dist
+import torch
+import os
+from torch.distributed.device_mesh import init_device_mesh
+
+from diffusers import AudioLDM2Pipeline
+
+from .audioldm2_stepParallelism_call import step_parallelism_call
+
+AudioLDM2Pipeline.__call__ = step_parallelism_call
+
+class StepParallelism(object):
+    def __init__(self, pipeline, step_size, warm_up = 5, local=False, predict_len=2):
+        self._rank = int(os.environ["RANK"])
+        self._world_size = int(os.environ["WORLD_SIZE"])
+
+        if local == True:
+            assert self._world_size == 1, "when setting local be True, shouldn't parallelism"
+
+        if self._world_size != step_size:
+            print("_world_size must be same with step_size")
+            exit()
+
+        self.step_mesh = init_device_mesh("cuda", (self._world_size, ))
+        self.step_rank = self.step_mesh.get_local_rank()
+        self.step_size = step_size
+
+        self.pipeline = pipeline.to(f"cuda:{self._rank}")
+        torch.cuda.set_device(f"cuda:{self._rank}")
+
+        self.pipeline.step_mesh = self.step_mesh
+        self.pipeline.step_rank = self.step_rank
+        self.pipeline.step_size = step_size
+        self.pipeline.warm_up = warm_up
+        self.pipeline.inference_step_num = 0
+        self.pipeline.comm_flag = False
+        self.pipeline.round = 0
+
+        # speculative decoding
+        self.pipeline.local = local
+        self.pipeline.predict_len = predict_len
+        self.pipeline.has_predict_len = 0
+
+    def clear_cache(self):
+        self.pipeline.inference_step_num = 0
+        self.pipeline.comm_flag = False
+        self.pipeline.round = 0

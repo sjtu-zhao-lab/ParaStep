@@ -1,0 +1,16 @@
+torchvision==0.20.1
+torch==2.5.1
+diffusers==0.32.0
+transformers==4.47.1
+numpy==1.26.0
+opencv-python==4.10.0.84
+accelerate==1.2.1
+imageio==2.37.0
+imageio-ffmpeg==0.6.0
+scipy==1.15.2
+protobuf==5.29.2
+sentencepiece==0.2.0
+
+torchmetrics
+rich
+bitsandbytes
