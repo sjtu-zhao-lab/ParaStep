@@ -1,0 +1,10 @@
+__pycache__
+experiments/latency_and_performance/sd3/cocoeval/outputs
+outputs
+
+*.wav
+*.gif
+*.mp4
+
+# TODO
+hunyuanvideo
